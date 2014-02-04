@@ -4,7 +4,7 @@
 #include <stdlib.h> /* malloc() */
 
 #if defined(IS_MACOSX)
-	#include <OpenGL/OpenGL.h>
+	#include <OpenGL/gl.h>
 	#include <ApplicationServices/ApplicationServices.h>
 #elif defined(USE_X11)
 	#include <X11/Xlib.h>
