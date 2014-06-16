@@ -8,6 +8,7 @@
 #include "py-convenience.h"
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* -- Bitmap class definition -- */
 
@@ -36,6 +37,18 @@ static PyObject *Bitmap_open(PyObject *self, PyObject *args);
 /* Description: Creates bitmap from string created by `bmp.to_string()`. */
 /* Raises: |ValueError| if the given string was invalid. */
 static PyObject *Bitmap_from_string(PyObject *self, PyObject *args);
+
+/* Syntax: Bitmap.get_buffer() => buffer object */
+/* Description: Returns the buffer of the object. */
+static PyObject *Bitmap_get_buffer(PyObject *self, PyObject *args);
+
+/* Syntax: Bitmap.get_buffer_length() => long */
+/* Description: Returns the bitmap array of the object. */
+static PyObject *Bitmap_get_buffer_length(PyObject *self, PyObject *args);
+
+/* Syntax: Bitmap.get_bpp() => int */
+/* Description: Returns the number of bytes per pixel in the buffer. */
+static PyObject *Bitmap_get_bpp(PyObject *self, PyObject *args);
 
 /* Syntax: bmp.get_portion(origin, size) => Bitmap object */
 /* Arguments: |origin| => |x|, |y| tuple of ints,
@@ -179,9 +192,18 @@ static PyMethodDef Bitmap_methods[] = {
 	{"__deepcopy__", (PyCFunction)Bitmap_deepcopy, METH_O, NULL},
 	{"point_in_bounds", (PyCFunction)Bitmap_point_in_bounds, METH_VARARGS,
 	 "Returns true if point is in bounds."},
-	{"get_color", (PyCFunction)Bitmap_get_color, METH_VARARGS,
+	{"get_color", (PyCFunction) Bitmap_get_color, METH_VARARGS,
 	 "bmp.get_color(x, y) -> hexadecimal integer\n"
 	 "Returns hexadecimal value describing the RGB color at the given point."},
+	{"get_buffer", (PyCFunction) Bitmap_get_buffer, METH_NOARGS,
+	 "bmp.get_buffer() -> uint8 buffer object\n"
+	 "Returns the bitmap buffer of the object."},
+	{"get_buffer_length", (PyCFunction) Bitmap_get_buffer_length, METH_NOARGS,
+	 "bmp.get_buffer_length() -> long\n"
+	 "Returns length of the bitmap buffer."},
+	{"get_bpp", (PyCFunction) Bitmap_get_bpp, METH_NOARGS,
+	 "bmp.get_bpp() -> int\n"
+	 "Returns the number of bytes per pixel in the buffer."},
 	{"open", Bitmap_open, METH_CLASS | METH_VARARGS,
 	 "Bitmap.open(filepath) -> Bitmap object\n"
 	 "Attempts to open image at the given absolute filepath."},
@@ -407,6 +429,25 @@ static PyObject *Bitmap_get_width(BitmapObject *self, PyObject *args)
 static PyObject *Bitmap_get_height(BitmapObject *self, PyObject *args)
 {
 	return Py_BuildValue("k", self->bitmap->height);
+}
+
+static PyObject *Bitmap_get_buffer_length(BitmapObject *self, PyObject *args)
+{
+	long length = (self->bitmap->width * self->bitmap->bytesPerPixel) * (self->bitmap->height * self->bitmap->bytesPerPixel);
+	return Py_BuildValue("l", length);
+}
+
+static PyObject *Bitmap_get_bpp(BitmapObject *self, PyObject *args)
+{
+	return Py_BuildValue("i", (int) self->bitmap->bytesPerPixel);
+}
+
+static PyObject *Bitmap_get_buffer(BitmapObject *self, PyObject *args)
+{
+	const size_t length = (self->bitmap->width * self->bitmap->bytesPerPixel) * (self->bitmap->height * self->bitmap->bytesPerPixel);
+	uint8_t *bb = self->bitmap->imageBuffer;
+	
+	return PyBuffer_FromReadWriteMemory(bb, (Py_ssize_t) length);
 }
 
 /* -- End of getters/setters -- */
