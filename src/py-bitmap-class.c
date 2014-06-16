@@ -432,7 +432,7 @@ static PyObject *Bitmap_get_height(BitmapObject *self, PyObject *args)
 
 static PyObject *Bitmap_get_buffer_length(BitmapObject *self, PyObject *args)
 {
-	long length = (self->bitmap->width * self->bitmap->bytesPerPixel) * (self->bitmap->height * self->bitmap->bytesPerPixel);
+	long length = self->bitmap->width  * self->bitmap->height * self->bitmap->bytesPerPixel;
 	return Py_BuildValue("l", length);
 }
 
