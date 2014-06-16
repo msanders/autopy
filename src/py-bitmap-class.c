@@ -8,7 +8,6 @@
 #include "py-convenience.h"
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 /* -- Bitmap class definition -- */
 
