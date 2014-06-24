@@ -443,7 +443,7 @@ static PyObject *Bitmap_get_bpp(BitmapObject *self, PyObject *args)
 
 static PyObject *Bitmap_get_buffer(BitmapObject *self, PyObject *args)
 {
-	const size_t length = (self->bitmap->width * self->bitmap->bytesPerPixel) * (self->bitmap->height * self->bitmap->bytesPerPixel);
+	const size_t length = self->bitmap->width * self->bitmap->height * self->bitmap->bytesPerPixel;
 	uint8_t *bb = self->bitmap->imageBuffer;
 	
 	return PyBuffer_FromReadWriteMemory(bb, (Py_ssize_t) length);
