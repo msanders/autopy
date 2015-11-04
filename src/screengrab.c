@@ -126,10 +126,10 @@ MMBitmapRef copyMMBitmapFromDisplayInRect(MMRect rect)
 	if ((screenMem = CreateCompatibleDC(screen)) == NULL ||
 	    SelectObject(screenMem, dib) == NULL ||
 	    !BitBlt(screenMem, 
-	            (int)rect.origin.x, 
-	            (int)rect.origin.y, 
+	            0,
+	            0,
 	            (int)rect.size.width,
-	            (int)rect.size.height, screen, 0, 0, SRCCOPY)) {
+	            (int)rect.size.height, screen, (int)rect.origin.x, (int)rect.origin.y, SRCCOPY)) {
 		/* Error copying data. */
 		ReleaseDC(NULL, screen);
 		DeleteObject(dib);
