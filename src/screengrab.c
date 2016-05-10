@@ -1,10 +1,8 @@
 #include "screengrab.h"
 #include "bmp_io.h"
-#include "endian.h"
 #include <stdlib.h> /* malloc() */
 
 #if defined(IS_MACOSX)
-	#include <OpenGL/OpenGL.h>
 	#include <ApplicationServices/ApplicationServices.h>
 	#include <OpenGL/gl.h>
 #elif defined(USE_X11)
@@ -17,60 +15,48 @@
 
 #if defined(IS_MACOSX)
 
-/* Helper functions (documented below). */
-static CGLContextObj createFullScreenCGLContext(CGOpenGLDisplayMask displayMask);
-static void destroyFullScreenCGLContext(CGLContextObj glContext);
-
-static uint8_t *createBufferFromCurrentCGLContext(GLint x,
-                                                  GLint y,
-                                                  GLsizei width,
-                                                  GLsizei height,
-                                                  size_t bytewidth);
+/* Code obtained from:
+ * https://developer.apple.com/library/mac/qa/qa1509/_index.html */
+static CFDataRef CopyImagePixels(CGImageRef inImage) {
+	return CGDataProviderCopyData(CGImageGetDataProvider(inImage));
+}
 
 #endif
 
 MMBitmapRef copyMMBitmapFromDisplayInRect(MMRect rect)
 {
 #if defined(IS_MACOSX)
-	/* The following is a very modified version of the glGrab code example
-	 * given by Apple (as are some of the convenience functions called). */
-	size_t bytewidth;
-	uint8_t bitsPerPixel, bytesPerPixel;
-	uint8_t *buffer;
+	MMBitmapRef bitmap = NULL;
+	uint8_t *buffer = NULL;
+	size_t bufferSize = 0;
 
-	/* Build OpenGL context of entire screen */
 	CGDirectDisplayID displayID = CGMainDisplayID();
-	CGOpenGLDisplayMask mask = CGDisplayIDToOpenGLDisplayMask(displayID);
-	CGLContextObj glContext = createFullScreenCGLContext(mask);
-	if (glContext == NULL) return NULL;
+	CGImageRef image = CGDisplayCreateImageForRect(displayID,
+	                                               CGRectMake(rect.origin.x,
+	                                                          rect.origin.y,
+	                                                          rect.size.width,
+	                                                          rect.size.height));
+	if (image) {
+		CFDataRef imageData = CopyImagePixels(image);
+		if (imageData) {
+			bufferSize = CFDataGetLength(imageData);
+			buffer = malloc(bufferSize);
+			if (buffer) {
+				CFDataGetBytes(imageData, CFRangeMake(0,bufferSize), buffer);
+				/* Use image size because it can differ from specified size */
+				bitmap = createMMBitmap(buffer,
+				                        CGImageGetWidth(image),
+				                        CGImageGetHeight(image),
+				                        CGImageGetBytesPerRow(image),
+				                        CGImageGetBitsPerPixel(image),
+				                        CGImageGetBitsPerPixel(image) / 8);
+			}
+			CFRelease(imageData);
+		}
+		CGImageRelease(image);
+	}
 
-	/* TODO: CGDisplayBitsPerPixel() is deprecated in Snow Leopard; I'm not
-	 * sure of the replacement function. */
-	bitsPerPixel = (uint8_t)CGDisplayBitsPerPixel(displayID);
-	bytesPerPixel = bitsPerPixel / 8;
-
-	/* Align width to padding. */
-	bytewidth = ADD_PADDING(rect.size.width * bytesPerPixel);
-
-	/* Convert Quartz point to postscript point. */
-	rect.origin.y = CGDisplayPixelsHigh(displayID) - rect.origin.y - rect.size.height;
-
-	/* Extract buffer from context */
-	buffer = createBufferFromCurrentCGLContext((GLint)rect.origin.x,
-	                                           (GLint)rect.origin.y,
-	                                           (GLsizei)rect.size.width,
-	                                           (GLsizei)rect.size.height,
-	                                           bytewidth);
-	/* Reset and release GL context */
-	destroyFullScreenCGLContext(glContext);
-	if (buffer == NULL) return NULL;
-
-	/* Convert from OpenGL (origin at bottom left) to Quartz (origin at top
-	 * left) coordinate system. */
-	flipBitmapData(buffer, rect.size.width, rect.size.height, bytewidth);
-
-	return createMMBitmap(buffer, rect.size.width, rect.size.height, bytewidth,
-	                      bitsPerPixel, bytesPerPixel);
+	return bitmap;
 #elif defined(USE_X11)
 	MMBitmapRef bitmap;
 
@@ -125,9 +111,9 @@ MMBitmapRef copyMMBitmapFromDisplayInRect(MMRect rect)
 	/* Copy the data into a bitmap struct. */
 	if ((screenMem = CreateCompatibleDC(screen)) == NULL ||
 	    SelectObject(screenMem, dib) == NULL ||
-	    !BitBlt(screenMem, 
-	            (int)rect.origin.x, 
-	            (int)rect.origin.y, 
+	    !BitBlt(screenMem,
+	            (int)rect.origin.x,
+	            (int)rect.origin.y,
 	            (int)rect.size.width,
 	            (int)rect.size.height, screen, 0, 0, SRCCOPY)) {
 		/* Error copying data. */
@@ -142,7 +128,7 @@ MMBitmapRef copyMMBitmapFromDisplayInRect(MMRect rect)
 	                        rect.size.width,
 	                        rect.size.height,
 	                        4 * rect.size.width,
-	                        (uint8_t)bi.bmiHeader.biBitCount, 
+	                        (uint8_t)bi.bmiHeader.biBitCount,
 	                        4);
 
 	/* Copy the data to our pixel buffer. */
@@ -158,91 +144,3 @@ MMBitmapRef copyMMBitmapFromDisplayInRect(MMRect rect)
 	return bitmap;
 #endif
 }
-
-#if defined(IS_MACOSX)
-
-/* Creates and returns a full-screen OpenGL graphics context (to be
- * released/destroyed by caller).
- *
- * To clean up the returned context use destroyFullScreenCGLContext(); */
-static CGLContextObj createFullScreenCGLContext(CGOpenGLDisplayMask displayMask)
-{
-	CGLContextObj glContext = NULL;
-	CGLPixelFormatObj pix;
-	GLint npix;
-	CGLPixelFormatAttribute attribs[4];
-
-	attribs[0] = kCGLPFAFullScreen;
-	attribs[1] = kCGLPFADisplayMask;
-	attribs[2] = displayMask;
-	attribs[3] = (CGLPixelFormatAttribute)0;
-
-	CGLChoosePixelFormat(attribs, &pix, &npix);
-	CGLCreateContext(pix, NULL, &glContext);
-
-	/* The pixel format is no longer needed, so destroy it. */
-	CGLDestroyPixelFormat(pix);
-
-	if (glContext == NULL) return NULL;
-
-	/* Set our context as the current OpenGL context. */
-	CGLSetCurrentContext(glContext);
-
-	/* Set full-screen mode. */
-	CGLSetFullScreen(glContext);
-
-	/* Select front buffer as our source for pixel data. */
-	glReadBuffer(GL_FRONT);
-
-	/* Finish previous OpenGL commands before continuing. */
-	glFinish();
-
-	if (glGetError() != GL_NO_ERROR) return NULL;
-
-	return glContext;
-}
-
-/* Cleans up CGLContext created by createFullScreenCGLContext(); */
-static void destroyFullScreenCGLContext(CGLContextObj glContext)
-{
-	glPopClientAttrib(); /* Clear attributes previously set. */
-	CGLSetCurrentContext(NULL); /* Reset context. */
-	CGLClearDrawable(glContext); /* Disassociate from full-screen. */
-	CGLDestroyContext(glContext); /* Release memory. */
-}
-
-/* Returns newly malloc'd bitmap (to be freed by caller). */
-static uint8_t *createBufferFromCurrentCGLContext(GLint x,
-                                                  GLint y,
-                                                  GLsizei width,
-                                                  GLsizei height,
-                                                  size_t bytewidth)
-{
-	uint8_t *data = NULL;
-
-	/* For extra safety, save & restore OpenGL states that are changed. */
-	glPushClientAttrib(GL_CLIENT_PIXEL_STORE_BIT);
-
-	glPixelStorei(GL_PACK_ALIGNMENT, BYTE_ALIGN); /* Force alignment. */
-	glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-	glPixelStorei(GL_PACK_SKIP_ROWS, 0);
-	glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
-
-	/* Allocate size for bitmap */
-	data = malloc(bytewidth * height);
-	if (data == NULL) return NULL;
-
-	/* Read the OpenGL frame into our buffer */
-	glReadPixels(x, y, width, height,
-	             MMRGB_IS_BGR ? GL_BGRA : GL_RGBA,
-#if __BYTE_ORDER == __BIG_ENDIAN
-	             GL_UNSIGNED_INT_8_8_8_8, /* Non-native format (little-endian) */
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-	             GL_UNSIGNED_INT_8_8_8_8_REV, /* Native format */
-#endif
-	             data);
-
-	return data;
-}
-
-#endif
