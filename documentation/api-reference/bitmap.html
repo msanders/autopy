@@ -28,6 +28,15 @@
               <li>
                 <a href="#Bitmap_object_methods">Bitmap object methods</a>
                 <ul>
+				  <li>
+                    <a href="#bmp.get_buffer">bmp.get_buffer</a>
+                  </li>
+				  <li>
+                    <a href="#bmp.get_buffer_length">bmp.get_buffer_length</a>
+                  </li>
+				  <li>
+                    <a href="#bmp.get_bpp">bmp.get_bpp</a>
+                  </li>
                   <li>
                     <a href="#bmp.get_portion">bmp.get_portion</a>
                   </li>
@@ -102,6 +111,30 @@
           Bitmap Object Methods<a href="#Bitmap_object_methods" class="headerlink" title="Permalink to this headline">¶</a>
         </h2>
         <dl class="section">
+	      <dt class="function" id="bmp.get_buffer">
+            <tt class="name">bmp.get_buffer</tt><big>()</big><a href="#bmp.get_buffer" class="headerlink" title="Permalink to this headline">¶</a>
+          </dt>
+          <dd>
+            <p>
+              Returns the uint8 buffer of the object. It can be handled by Numpy with numpy.frombuffer(buffer, dtype=numpy.dtype('uint8'))
+            </p>
+          </dd>
+		  <dt class="function" id="bmp.get_buffer_length">
+            <tt class="name">bmp.get_buffer_length</tt><big>()</big><a href="#bmp.get_buffer_length" class="headerlink" title="Permalink to this headline">¶</a>
+          </dt>
+          <dd>
+            <p>
+              Returns the buffer length.
+            </p>
+          </dd>
+		  <dt class="function" id="bmp.get_bpp">
+            <tt class="name">bmp.get_bpp</tt><big>()</big><a href="#bmp.get_bpp" class="headerlink" title="Permalink to this headline">¶</a>
+          </dt>
+          <dd>
+            <p>
+              Returns the number of bits per pixel. 3 for RGB, 4 for RGBA.
+            </p>
+          </dd>
           <dt class="function" id="bmp.get_portion">
             <tt class="name">bmp.get_portion</tt><big>(</big><span class="funcarg">origin</span>, <span class="funcarg">size</span><big>)</big><a href="#bmp.get_portion" class="headerlink" title="Permalink to this headline">¶</a>
           </dt>
