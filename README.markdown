@@ -174,6 +174,11 @@ To save the screen capture to a file, we can use:
 	>>> import autopy
 	>>> autopy.bitmap.capture_screen().save('screengrab.png')
 
+For capturing a portion of the screen, supply the function with upper left corner and width/height of the desirable rectangle portion
+
+	>>> import autopy
+	>>> autopy.bitmap.capture_screen( ((50, 50), (250, 250)) )
+
 The filetype is either parsed automatically from the filename, or given as an optional parameter. AutoPy currently only supports the BMP and PNG filetypes, though, as those are really all that are practical for its purpose.
 
 Loading a bitmap is done essentially the same way, only from a class method:
