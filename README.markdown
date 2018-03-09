@@ -9,18 +9,18 @@ by Michael Sanders
 
 ## Outline
 
-* Introduction
+* [Introduction](../../#introduction)
 	- What is AutoPy?
 	- How so?
-* Getting Started
+* [Getting Started](../../#getting-started)
 	- Requirements
 	- Installation
 	- Hello World
-* Tutorials
+* [Tutorials](../../#tutorials)
 	- Controlling the Mouse
 	- Working with Bitmaps
-* Closing & API Reference
-* License
+* [Closing & API Reference](../../#closing--api-reference)
+* [License](../../#license)
 	- Summary
 	- MIT License
 	- The FreeBSD Documentation License
@@ -74,6 +74,8 @@ Another option is to compile from the latest source on the GitHub repository:
 	# python setup.py install
 
 When building from source, make sure to `cd` out of the autopy directory before attempting to use AutoPy or else it may fail on an `ImportError` due to Python's relative imports.
+
+Make sure the development packages for the packages / libraries listed in [requirements](../../#requirements) section are also installed if building from source.
 
 <div id="autopy-helloworld"></div>
 
