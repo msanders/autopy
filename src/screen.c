@@ -21,8 +21,13 @@ MMSize getMainDisplaySize(void)
 	return MMSizeMake((size_t)DisplayWidth(display, screen),
 	                  (size_t)DisplayHeight(display, screen));
 #elif defined(IS_WINDOWS)
-	return MMSizeMake((size_t)GetSystemMetrics(SM_CXSCREEN),
-	                  (size_t)GetSystemMetrics(SM_CYSCREEN));
+	if (GetSystemMetrics(SM_CMONITORS) == 1) {
+ 		return MMSizeMake((size_t)GetSystemMetrics(SM_CXSCREEN),
+ 		                  (size_t)GetSystemMetrics(SM_CYSCREEN));
+ 	} else 	{
+ 		return MMSizeMake((size_t)GetSystemMetrics(SM_CXVIRTUALSCREEN),
+ 		                  (size_t)GetSystemMetrics(SM_CYVIRTUALSCREEN));
+ 	}
 #endif
 }
 
